@@ -11,18 +11,57 @@ const users = [];
 
 function checksExistsUserAccount(request, response, next) {
   // Complete aqui
+  const { username } = request.headers;
+  const usernameAlreadyExists = users.find((user) => user.username === username);
+  if (!usernameAlreadyExists) {
+    return response.status(404).json({ error: 'Username not exists' });
+  }
+  request.user = usernameAlreadyExists;
+  next();
 }
 
 function checksCreateTodosUserAvailability(request, response, next) {
   // Complete aqui
+  const { user } = request;
+  if(user.pro){
+    next();
+  }else if(user.todos.length < 10){
+    next();
+  }
+  return response.status(403).json({ error: 'User can not create todos ' });
 }
 
 function checksTodoExists(request, response, next) {
   // Complete aqui
+  const { username } = request.headers;
+  const { id } = request.params;
+  const usernameAlreadyExists = users.find((user) => user.username === username);
+  if (!usernameAlreadyExists) {
+    return response.status(404).json({ error: 'Username not exists' });
+  }
+  if(!validate(id)){
+    return response.status(400).json({ error: 'Id is not uuid' });
+  }
+
+  const todo = usernameAlreadyExists.todos.find((todo) => todo.id === id);
+  if(!todo){
+    return response.status(404).json({ error: 'Todo not exists' });
+  }
+  request.user = usernameAlreadyExists;
+  request.todo = todo;
+  next();
+
 }
 
 function findUserById(request, response, next) {
   // Complete aqui
+  const { id } = request.params;
+  const usernameAlreadyExists = users.find((user) => user.id === id);
+  if (!usernameAlreadyExists) {
+    return response.status(404).json({ error: 'Username not exists' });
+  }
+  request.user = usernameAlreadyExists;
+  next();
 }
 
 app.post('/users', (request, response) => {
@@ -69,7 +108,7 @@ app.get('/todos', checksExistsUserAccount, (request, response) => {
   const { user } = request;
 
   return response.json(user.todos);
-});
+}); 
 
 app.post('/todos', checksExistsUserAccount, checksCreateTodosUserAvailability, (request, response) => {
   const { title, deadline } = request.body;
